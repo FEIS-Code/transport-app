@@ -1,138 +1,54 @@
-/* Basic styling */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: #f4f7f6;
-    color: #333;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-    padding: 20px;
-}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f4f7f6; color: #333; display: flex;
+            justify-content: center; align-items: flex-start; min-height: 100vh; padding: 20px;
+        }
+        .container {
+            width: 100%; max-width: 500px; background: #ffffff; border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07); padding: 25px;
+        }
+        header {
+            text-align: center; border-bottom: 1px solid #eee;
+            padding-bottom: 15px; margin-bottom: 25px;
+        }
+        header h1 { margin: 0; color: #005a9c; }
+        #sub-header { margin: 5px 0 0; font-size: 1.1em; color: #555; font-weight: 500; }
+        
+        /* UPDATED: Added 'select' to this rule */
+        input[type="date"], input[type="number"], input[type="time"], textarea, button, select {
+            width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd;
+            border-radius: 8px; font-size: 1em; box-sizing: border-box;  
+            /* Fix for select in iOS */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-color: #fff;
+        }
+        textarea { resize: vertical; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; }
+        button {
+            background-color: #007aff; color: white; font-weight: 600;
+            border: none; cursor: pointer; transition: background-color 0.2s;
+        }
+        button:hover { background-color: #0056b3; }
+        #btn-submit { background-color: #34c759; }
+        #btn-submit:hover { background-color: #2a9e46; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .grid-container {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 12px;
+        }
+        .btn-route {
+            padding: 20px 10px; font-size: 1.2em; font-weight: 700; text-align: center;
+            background-color: #f0f0f0; color: #007aff; border: 1px solid #ddd;
+        }
+        .btn-route:hover { background-color: #e6e6e6; border-color: #007aff; }
+        
+        /* REMOVED: All styles for #step-trip and .btn-trip */
+        
+        .hidden {
+            display: none;
+        }
 
-.container {
-    width: 100%;
-    max-width: 500px;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
-    padding: 25px;
-}
-
-header {
-    text-align: center;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 15px;
-    margin-bottom: 25px;
-}
-header h1 {
-    margin: 0;
-    color: #005a9c;
-}
-#sub-header {
-    margin: 5px 0 0;
-    font-size: 1.1em;
-    color: #555;
-    font-weight: 500;
-}
-
-/* Form elements */
-input[type="date"],
-input[type="number"],
-input[type="time"],
-textarea,
-button {
-    width: 100%;
-    padding: 14px;
-    margin-bottom: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 1em;
-    box-sizing: border-box; /* Important for padding */
-}
-
-textarea {
-    resize: vertical;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 600;
-}
-
-/* Button styles */
-button {
-    background-color: #007aff;
-    color: white;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-button:hover {
-    background-color: #0056b3;
-}
-#btn-submit {
-    background-color: #34c759;
-}
-#btn-submit:hover {
-    background-color: #2a9e46;
-}
-
-/* Big Button Grid for Routes */
-.grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-    gap: 12px;
-}
-
-.btn-route {
-    padding: 20px 10px;
-    font-size: 1.2em;
-    font-weight: 700;
-    text-align: center;
-    background-color: #f0f0f0;
-    color: #007aff;
-    border: 1px solid #ddd;
-}
-.btn-route:hover {
-    background-color: #e6e6e6;
-    border-color: #007aff;
-}
-
-/* Morning/Afternoon Buttons */
-#step-trip {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-.btn-trip {
-    padding: 20px;
-    font-size: 1.2em;
-}
-.btn-trip[data-trip="Morning"] {
-    background-color: #ff9500;
-}
-.btn-trip[data-trip="Afternoon"] {
-    background-color: #5856d6;
-}
-
-/* Utility classes */
-.hidden {
-    display: none;
-}
-
-/* Status messages */
-#status-message {
-    text-align: center;
-    font-weight: 600;
-    margin-top: 15px;
-    font-size: 1.1em;
-}
-.success {
-    color: #34c759;
-}
-.error {
-    color: #ff3b30;
-}
+        #status-message { text-align: center; font-weight: 600; margin-top: 15px; font-size: 1.1em; }
+        .success { color: #34c759; }
+        .error { color: #ff3b30; }
