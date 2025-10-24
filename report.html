@@ -19,47 +19,33 @@
             padding-bottom: 15px; margin-bottom: 25px;
         }
         header h1 { margin: 0; color: #005a9c; }
-        
-        /* Updated Style */
         input[type="date"], button, select {
             width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd;
             border-radius: 8px; font-size: 1em; box-sizing: border-box;  
-            background-color: #fff;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
+            background-color: #fff; -webkit-appearance: none; -moz-appearance: none; appearance: none;
         }
-        
         button {
             background-color: #007aff; color: white; font-weight: 600;
             border: none; cursor: pointer; transition: background-color 0.2s;
         }
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #cccccc; }
-        
-        table {
-            width: 100%; border-collapse: collapse; margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd; padding: 12px; text-align: left;
-        }
-        th {
-            background-color: #f9f9f9; font-weight: 600;
-        }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f9f9f9; font-weight: 600; }
         tr:nth-child(even) { background-color: #fdfdfd; }
         #report-area { display: none; }
         #status { text-align: center; font-size: 1.1em; color: #555; }
-
-        /* --- ADD THIS NEW STYLE --- */
-        tr.late-entry {
-            background-color: #ffebee; /* Light Red */
-            font-weight: 600;
+        tr.late-entry { background-color: #ffebee; font-weight: 600; }
+        #btn-send-whatsapp {
+            background-color: #25D366; color: white; font-weight: 600;
+            border: none; cursor: pointer; transition: background-color 0.2s;
+            margin-top: 20px;
         }
-        /* --- END OF NEW STYLE --- */
+        #btn-send-whatsapp:hover { background-color: #128C7E; }
     </style>
 </head>
 <body>
-    
     <div class="container">
         <header>
             <h1>Daily Transport Report</h1>
@@ -68,11 +54,10 @@
         <section id="step-select">
             <label for="report-date">Select Report Date:</label>
             <input type="date" id="report-date" required>
-
             <label for="trip-select">Select Trip:</label>
             <select id="trip-select" required>
                 <option value="Morning">☀️ Morning</option>
-                <option value="Evening">🌙 Evening</option>
+                <option value="Afternoon">🌙 Afternoon</option>
             </select>
             <button type="button" id="btn-get-report">Get Report</button>
         </section>
@@ -84,25 +69,22 @@
             <table id="report-table">
                 <thead>
                     <tr>
-                        <th>Route</th>
-                        <th>Trip</th>
-                        <th>Student Count</th>
-                        <th>Time</th>
-                        <th>Concerns</th>
+                        <th>Route</th> <th>Trip</th> <th>Student Count</th> <th>Time</th> <th>Concerns</th>
                     </tr>
                 </thead>
-                <tbody id="report-body">
-                    </tbody>
+                <tbody id="report-body"></tbody>
             </table>
+            <button type="button" id="btn-send-whatsapp" style="display: none;">
+                Send Anomalies via WhatsApp
+            </button>
         </section>
     </div>
 
 <script>
-    // -------------------------------------------------------------------------
-    // --- IMPORTANT: Make sure this is your latest URL                      ---
-    // -------------------------------------------------------------------------
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw_5zpSwBICLlEmCDL-gSwSVQ8xkWynQK1R4sANJPWOPiQJeMMrWv8hM600BP1aIGmIgQ/exec"; // <-- Make sure this is your latest URL
+    // Get the WEB APP URL from the script itself
+    const WEB_APP_URL = "<?= ScriptApp.getService().getUrl() ?>";
 
+    let currentAnomalyMessage = "";
     const dateInput = document.getElementById("report-date");
     const tripSelect = document.getElementById("trip-select");
     const getReportBtn = document.getElementById("btn-get-report");
@@ -110,44 +92,44 @@
     const reportTitle = document.getElementById("report-title");
     const reportBody = document.getElementById("report-body");
     const statusEl = document.getElementById("status");
+    const whatsappBtn = document.getElementById("btn-send-whatsapp");
 
     dateInput.valueAsDate = new Date();
-
     getReportBtn.addEventListener("click", fetchReportData);
+    whatsappBtn.addEventListener("click", () => {
+        if (currentAnomalyMessage) {
+            const encodedMessage = encodeURIComponent(currentAnomalyMessage);
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+            window.open(whatsappUrl, '_blank');
+        }
+    });
 
-    // --- HELPER FUNCTION ---
-    /**
-     * Converts a time string (e.g., "8:32" or "16:30") into total minutes.
-     */
     function timeToMinutes(timeStr) {
         try {
+            if (!timeStr || timeStr.indexOf(':') === -1) return 0;
             const [hours, minutes] = timeStr.split(':').map(Number);
             return (hours * 60) + minutes;
-        } catch (e) {
-            console.error("Invalid time format:", timeStr);
-            return 0;
-        }
+        } catch (e) { return 0; }
     }
 
     async function fetchReportData() {
         const date = dateInput.value;
         const trip = tripSelect.value;
-        if (!date) {
-            alert("Please select a date.");
-            return;
-        }
+        if (!date) { alert("Please select a date."); return; }
 
         getReportBtn.disabled = true;
         getReportBtn.textContent = "Loading...";
         statusEl.textContent = "Fetching report data...";
         reportArea.style.display = "none";
+        whatsappBtn.style.display = "none";
+        currentAnomalyMessage = ""; 
 
         try {
+            // *** UPDATED URL to call doGet_Report_Data ***
             const url = new URL(WEB_APP_URL);
             url.searchParams.append('report_date', date);
-            url.searchParams.append('report_trip', trip); 
-            url.searchParams.append('cache_bust', new Date().getTime());
-
+            url.searchParams.append('report_trip', trip);  
+            
             const response = await fetch(url);
             if (!response.ok) throw new Error("Network error.");
 
@@ -157,8 +139,7 @@
             buildTable(data, date, trip);
             statusEl.textContent = "";
 
-        } catch (error)
-        {
+        } catch (error) {
             console.error("Error fetching report:", error);
             statusEl.textContent = `Error: ${error.message}`;
         } finally {
@@ -167,14 +148,13 @@
         }
     }
 
-    // --- THIS FUNCTION IS UPDATED ---
     function buildTable(data, date, trip) {
         const [year, month, day] = date.split('-');
         const friendlyDate = `${day}/${month}/${year}`;
 
         reportTitle.textContent = `Report for ${trip} - ${friendlyDate}`;
         reportArea.style.display = "block";
-        reportBody.innerHTML = ""; 
+        reportBody.innerHTML = "";  
 
         if (data.length === 0) {
             statusEl.textContent = "No entries found for this date and trip.";
@@ -182,45 +162,57 @@
             return;
         }
 
+        // Sort by Route number
         data.sort((a, b) => {
-            const routeA = parseInt(a.route.substring(1));
-            const routeB = parseInt(b.route.substring(1));
+            const routeA = parseInt(a.route.substring(1) || "0");
+            const routeB = parseInt(b.route.substring(1) || "0");
             return routeA - routeB;
         });
 
-        // --- UPDATED TIME LIMITS ---
-        const morningLimit = timeToMinutes("08:20"); // 510 minutes (was 08:20)
-        const eveningLimit = timeToMinutes("16:30"); // 990 minutes
-        // --- END OF UPDATE ---
+
+        // --- These limits must match your Apps Script ---
+        const morningLimit = timeToMinutes("08:20");
+        const afternoonLimit = timeToMinutes("16:00");
+
+        currentAnomalyMessage = `*Transport Anomalies - ${trip} (${friendlyDate})*\n\n`;
+        let anomalyFound = false;
 
         for (const row of data) {
             const tr = document.createElement("tr");
-
             let isLate = false;
+            let hasConcern = row.concerns && row.concerns.trim() !== "";
             const entryTime = timeToMinutes(row.time);
 
-            if (row.trip === "Morning" && entryTime > morningLimit) {
-                isLate = true;
-            }
-            if (row.trip === "Evening" && entryTime > eveningLimit) {
-                isLate = true;
-            }
+            if (row.trip === "Morning" && entryTime > 0 && entryTime > morningLimit) { isLate = true; }
+            if (row.trip === "Afternoon" && entryTime > 0 && entryTime > afternoonLimit) { isLate = true; }
 
-            if (isLate) {
-                tr.classList.add("late-entry");
+            if (isLate) { tr.classList.add("late-entry"); }
+            
+            if (isLate || hasConcern) {
+                anomalyFound = true;
+                let anomalyParts = [];
+                if (isLate) { anomalyParts.push(`LATE (${row.time})`); }
+                if (hasConcern) { anomalyParts.push(`CONCERN: ${row.concerns}`); }
+                currentAnomalyMessage += `*- ${row.route}:* ${anomalyParts.join(' | ')}\n`;
             }
 
             tr.innerHTML = `
-                <td>${row.route}</td>
-                <td>${row.trip}</td>
+                <td>${row.route}</td> 
+                <td>${row.trip}</td> 
                 <td>${row.studentCount}</td>
-                <td>${row.time}</td>
+                <td>${row.time}</td> 
                 <td>${row.concerns}</td>
             `;
             reportBody.appendChild(tr);
         }
+        
+        if (anomalyFound) {
+            whatsappBtn.style.display = "block";
+        } else {
+            currentAnomalyMessage = "";
+            whatsappBtn.style.display = "none";
+        }
     }
-
 </script>
 </body>
 </html>
