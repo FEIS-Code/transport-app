@@ -4,36 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Transport Report</title>
-    <link rel="stylesheet" href="styles.css"> 
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f4f7f6; color: #333; display: flex;
+            justify-content: center; align-items: flex-start; min-height: 100vh; padding: 20px;
+        }
+        .container {
+            width: 100%; max-width: 500px; background: #ffffff; border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07); padding: 25px;
+        }
+        header {
+            text-align: center; border-bottom: 1px solid #eee;
+            padding-bottom: 15px; margin-bottom: 25px;
+        }
+        header h1 { margin: 0; color: #005a9c; }
+        #sub-header { margin: 5px 0 0; font-size: 1.1em; color: #555; font-weight: 500; }
+        
+        input[type="date"], input[type="number"], input[type="time"], textarea, button, select {
+            width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd;
+            border-radius: 8px; font-size: 1em; box-sizing: border-box;  
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-color: #fff;
+        }
+        textarea { resize: vertical; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; }
+        button {
+            background-color: #007aff; color: white; font-weight: 600;
+            border: none; cursor: pointer; transition: background-color 0.2s;
+        }
+        button:hover { background-color: #0056b3; }
+        #btn-submit { background-color: #34c759; }
+        #btn-submit:hover { background-color: #2a9e46; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .grid-container {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 12px;
+        }
+        .btn-route {
+            padding: 20px 10px; font-size: 1.2em; font-weight: 700; text-align: center;
+            background-color: #f0f0f0; color: #007aff; border: 1px solid #ddd;
+        }
+        .btn-route:hover { background-color: #e6e6e6; border-color: #007aff; }
+        
+        /* --- UPDATED STYLES --- */
+        .btn-route.completed {
+            background-color: #34c759; /* Green for all */
+            color: white;
+            border-color: #2a9e46;
+        }
+        /* REMOVED .completed-partial */
+        
+        .hidden {
+            display: none;
+        }
+
+        #status-message { text-align: center; font-weight: 600; margin-top: 15px; font-size: 1.1em; }
+        .success { color: #34c759; }
+        .error { color: #ff3b30; }
+    </style>
 </head>
 <body>
     
     <div class="container">
         <header>
             <h1>Daily Transport Report</h1>
-            <p id="sub-header">Step 1: Select Date</p>
+            <p id="sub-header">Step 1: Select Date & Trip</p>
         </header>
 
         <form id="transport-form">
             <section id="step-date">
                 <label for="date">Report Date:</label>
                 <input type="date" id="date" required>
-                <button type="button" id="btn-next-route" disabled>Next</button>
-            </section>
-            
-            <section id="step-route" class="hidden">
-                <div class="grid-container">
-                </div>
-            </section>
-
-            <section id="step-details" class="hidden">
+                
                 <label for="trip-select">Trip:</label>
                 <select id="trip-select" required>
                     <option value="">--Select Trip--</option>
                     <option value="Morning">☀️ Morning</option>
                     <option value="Evening">🌙 Evening</option>
                 </select>
+                
+                <button type="button" id="btn-next-route" disabled>Next</button>
+            </section>
+            
+            <section id="step-route" class="hidden">
+                <div class="grid-container">
+                    </div>
+            </section>
 
+            <section id="step-details" class="hidden">
                 <label for="student-count">Number of Students:</label>
                 <input type="number" id="student-count" required>
                 <label for="time">Arrival/Departure Time:</label>
@@ -46,8 +107,195 @@
         
         <div id="status-message"></div>
     </div>
+<script>
+    // -------------------------------------------------------------------------
+    // --- IMPORTANT: Paste your NEW Web App URL here                       ---
+    // -------------------------------------------------------------------------
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbza-ioENKJNvBbYyvMhaClhQUV-feBi4J97mZWf0o8oMbnJHpGBCkus31QOcE5H9OQW2Q/exec"; // <-- PASTE NEW URL
+    
+    // Global state
+    const formData = { date: "", route: "", trip: "" };
+    let submittedTrips = new Set(); // Stores fetched data, e.g., "R1"
 
-<script src="script.js"></script>
+    // Get elements
+    const form = document.getElementById("transport-form");
+    const subHeader = document.getElementById("sub-header");
+    const statusMessage = document.getElementById("status-message");
+    const stepDate = document.getElementById("step-date");
+    const stepRoute = document.getElementById("step-route");
+    const routeGrid = document.querySelector("#step-route .grid-container");
+    const stepDetails = document.getElementById("step-details");
+    const dateInput = document.getElementById("date");
+    const tripSelect = document.getElementById("trip-select"); // <-- NEW: Get trip dropdown
+    const nextRouteButton = document.getElementById("btn-next-route");
 
+    // --- Step 1: Date & Trip ---
+    dateInput.valueAsDate = new Date();
+    nextRouteButton.disabled = false; // Enable button by default
+
+    // Check both date and trip to enable button
+    function checkStep1Validity() {
+        nextRouteButton.disabled = !dateInput.value || !tripSelect.value;
+    }
+    dateInput.addEventListener("input", checkStep1Validity);
+    tripSelect.addEventListener("input", checkStep1Validity);
+    checkStep1Validity(); // Run on load
+
+    // Step 1 → Step 2 (Route)
+    nextRouteButton.addEventListener("click", async () => {
+        // Get values from Step 1
+        formData.date = dateInput.value;
+        formData.trip = tripSelect.value; 
+
+        // Validation is already handled by the button's disabled state
+        
+        stepDate.classList.add("hidden");
+        stepRoute.classList.remove("hidden");
+        subHeader.textContent = "Step 2: Loading routes...";
+
+        // Fetch the data for the selected date AND trip
+        await fetchSubmittedRoutes(formData.date, formData.trip);
+        
+        // After data is fetched, build the route buttons
+        buildRouteButtons();
+        subHeader.textContent = `Step 2: Select Route (${formData.trip})`;
+    });
+
+    /**
+     * Fetches submitted routes for the given date AND trip.
+     */
+    async function fetchSubmittedRoutes(date, trip) { // <-- UPDATED
+        submittedTrips.clear(); 
+        
+        try {
+            const url = new URL(WEB_APP_URL);
+            url.searchParams.append('date', date);
+            url.searchParams.append('trip', trip); // <-- NEW: Send trip
+            
+            // This adds a unique number to the URL to trick the 
+            // browser into fetching fresh data every time.
+            url.searchParams.append('cache_bust', new Date().getTime());
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error("Network error while fetching routes.");
+            }
+            
+            const data = await response.json(); // e.g., ["R1", "R5"]
+            
+            if (data.status === 'error') {
+                throw new Error(data.message);
+            }
+
+            submittedTrips = new Set(data);
+            
+        } catch (error) {
+            console.error("Error fetching submitted routes:", error);
+            showStatus(error.message, "error");
+        }
+    }
+
+    /**
+     * Creates the route buttons and colors them based on fetched data.
+     */
+    function buildRouteButtons() {
+        routeGrid.innerHTML = ""; // Clear old buttons
+        
+        for (let i = 1; i <= 14; i++) {
+            const routeName = `R${i}`;
+            const routeBtn = document.createElement("button");
+            routeBtn.type = "button";
+            routeBtn.className = "btn-route";
+            routeBtn.dataset.route = routeName;
+            
+            // --- UPDATED COMPLETION LOGIC ---
+            // Simpler: just check if the route is in the set
+            const isDone = submittedTrips.has(routeName);
+
+            routeBtn.textContent = routeName;
+            if (isDone) {
+                routeBtn.classList.add("completed"); // Only one class
+            }
+            // --- END OF UPDATED LOGIC ---
+
+            // Add click listener
+            routeBtn.addEventListener("click", () => {
+                formData.route = routeBtn.dataset.route;
+                stepRoute.classList.add("hidden");
+                stepDetails.classList.remove("hidden");
+
+                const [year, month, day] = formData.date.split('-');
+                const friendlyDate = `${day}/${month}/${year}`;
+                
+                // --- UPDATED: Header now includes trip ---
+                subHeader.textContent = `Step 3: Details (${formData.route} - ${formData.trip} - ${friendlyDate})`;
+            });
+
+            routeGrid.appendChild(routeBtn);
+        }
+    }
+    
+    // --- Step 3: Form Submission ---
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const submitButton = document.getElementById("btn-submit");
+        submitButton.disabled = true;
+        submitButton.textContent = "Submitting...";
+
+        // --- UPDATED: finalData no longer needs to find trip ---
+        const finalData = {
+            ...formData, // This now contains date, trip, AND route
+            studentCount: document.getElementById("student-count").value,
+            time: document.getElementById("time").value,
+            concerns: document.getElementById("concerns").value
+        };
+
+        // --- REMOVED: Trip validation (now done in Step 1) ---
+
+        try {
+            await fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "no-cors", 
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(finalData),
+            });
+            
+            showStatus("Log saved successfully!", "success");
+            resetForm();
+
+        } catch (error) {
+            console.error("Error:", error);
+            showStatus(`Error saving log: ${error.message}`, "error");
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = "Submit Log";
+        }
+    });
+
+    function showStatus(message, type) {
+        statusMessage.textContent = message;
+        statusMessage.className = type;
+    }
+
+    function resetForm() {
+        form.reset(); // This will reset date AND the trip dropdown
+        dateInput.valueAsDate = new Date();
+        checkStep1Validity(); // Re-check button status
+        
+        formData.route = "";
+        formData.trip = "";
+        formData.date = ""; // Clear date from formData
+
+        stepDetails.classList.add("hidden");
+        stepRoute.classList.add("hidden");
+        stepDate.classList.remove("hidden");
+        
+        routeGrid.innerHTML = ""; 
+        submittedTrips.clear();   
+
+        subHeader.textContent = "Step 1: Select Date & Trip";
+        showStatus("Form reset for next entry.", "");
+    }
+</script>
 </body>
 </html>
