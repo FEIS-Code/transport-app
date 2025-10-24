@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Transport Report</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css"> 
 </head>
 <body>
     <div class="container">
@@ -17,14 +17,9 @@
             <section id="step-date">
                 <label for="date">Report Date:</label>
                 <input type="date" id="date" required>
-                <button type="button" id="btn-next-route">Next</button>
+                <button type="button" id="btn-next-trip">Next</button>
             </section>
-
-            <section id="step-route" class="hidden">
-                <div class="grid-container">
-                    </div>
-            </section>
-
+            
             <section id="step-trip" class="hidden">
                 <button type="button" class="btn-trip" data-trip="Morning">
                     ☀️ Morning
@@ -32,6 +27,11 @@
                 <button type="button" class="btn-trip" data-trip="Afternoon">
                     🌙 Afternoon
                 </button>
+            </section>
+
+            <section id="step-route" class="hidden">
+                <div class="grid-container">
+                    </div>
             </section>
 
             <section id="step-details" class="hidden">
