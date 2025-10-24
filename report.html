@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Report</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f4f7f6; color: #333; display: flex;
+            justify-content: center; align-items: flex-start; min-height: 100vh; padding: 20px;
+        }
+        .container {
+            width: 100%; max-width: 800px; background: #ffffff; border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07); padding: 25px;
+        }
+        header {
+            text-align: center; border-bottom: 1px solid #eee;
+            padding-bottom: 15px; margin-bottom: 25px;
+        }
+        header h1 { margin: 0; color: #005a9c; }
+        input[type="date"], button {
+            width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ddd;
+            border-radius: 8px; font-size: 1em; box-sizing: border-box;  
+            background-color: #fff;
+        }
+        button {
+            background-color: #007aff; color: white; font-weight: 600;
+            border: none; cursor: pointer; transition: background-color 0.2s;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #cccccc; }
+        
+        table {
+            width: 100%; border-collapse: collapse; margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd; padding: 12px; text-align: left;
+        }
+        th {
+            background-color: #f9f9f9; font-weight: 600;
+        }
+        tr:nth-child(even) { background-color: #fdfdfd; }
+        #report-area { display: none; }
+        #status { text-align: center; font-size: 1.1em; color: #555; }
+    </style>
+</head>
+<body>
+    
+    <div class="container">
+        <header>
+            <h1>Daily Transport Report</h1>
+        </header>
+
+        <section id="step-select">
+            <label for="report-date">Select Report Date:</label>
+            <input type="date" id="report-date" required>
+            <button type="button" id="btn-get-report">Get Report</button>
+        </section>
+        
+        <p id="status"></p>
+
+        <section id="report-area">
+            <h2 id="report-title"></h2>
+            <table id="report-table">
+                <thead>
+                    <tr>
+                        <th>Route</th>
+                        <th>Trip</th>
+                        <th>Student Count</th>
+                        <th>Time</th>
+                        <th>Concerns</th>
+                    </tr>
+                </thead>
+                <tbody id="report-body">
+                    </tbody>
+            </table>
+        </section>
+    </div>
+
+<script>
+    // -------------------------------------------------------------------------
+    // --- IMPORTANT: Paste your SAME Web App URL here                       ---
+    // -------------------------------------------------------------------------
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwiPjZ1pA2dyUCk9i8eW9rpVJI6hFnlH4IB6PniP3uQX_m_915Pc_yLdPwKnjM7zPdLPg/exec"; // <-- Make sure this is your latest URL
+
+    const dateInput = document.getElementById("report-date");
+    const getReportBtn = document.getElementById("btn-get-report");
+    const reportArea = document.getElementById("report-area");
+    const reportTitle = document.getElementById("report-title");
+    const reportBody = document.getElementById("report-body");
+    const statusEl = document.getElementById("status");
+
+    // Set default date to today
+    dateInput.valueAsDate = new Date();
+
+    getReportBtn.addEventListener("click", fetchReportData);
+
+    async function fetchReportData() {
+        const date = dateInput.value;
+        if (!date) {
+            alert("Please select a date.");
+            return;
+        }
+
+        getReportBtn.disabled = true;
+        getReportBtn.textContent = "Loading...";
+        statusEl.textContent = "Fetching report data...";
+        reportArea.style.display = "none";
+
+        try {
+            const url = new URL(WEB_APP_URL);
+            url.searchParams.append('report_date', date);
+            url.searchParams.append('cache_bust', new Date().getTime());
+
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Network error.");
+
+            const data = await response.json();
+            if (data.status === 'error') throw new Error(data.message);
+
+            buildTable(data, date);
+            statusEl.textContent = "";
+
+        } catch (error) {
+            console.error("Error fetching report:", error);
+            statusEl.textContent = `Error: ${error.message}`;
+        } finally {
+            getReportBtn.disabled = false;
+            getReportBtn.textContent = "Get Report";
+        }
+    }
+
+    function buildTable(data, date) {
+        // Re-format date from YYYY-MM-DD to DD/MM/YYYY
+        const [year, month, day] = date.split('-');
+        const friendlyDate = `${day}/${month}/${year}`;
+
+        reportTitle.textContent = `Report for ${friendlyDate}`;
+        reportArea.style.display = "block";
+        reportBody.innerHTML = ""; // Clear old data
+
+        if (data.length === 0) {
+            statusEl.textContent = "No entries found for this date.";
+            reportArea.style.display = "none";
+            return;
+        }
+
+        // Sort data by route number (R1, R2, R10, etc.)
+        data.sort((a, b) => {
+            const routeA = parseInt(a.route.substring(1));
+            const routeB = parseInt(b.route.substring(1));
+            return routeA - routeB;
+        });
+
+        for (const row of data) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${row.route}</td>
+                <td>${row.trip}</td>
+                <td>${row.studentCount}</td>
+                <td>${row.time}</td>
+                <td>${row.concerns}</td>
+            `;
+            reportBody.appendChild(tr);
+        }
+    }
+
+</script>
+</body>
+</html>
