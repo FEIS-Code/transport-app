@@ -45,7 +45,8 @@ for (let i = 1; i <= 14; i++) {
     routeBtn.textContent = `R${i}`;
     routeBtn.dataset.route = `R${i}`;
     
-    routeBtn.addEventListener("click", ()_ => {
+    // THIS IS THE CORRECTED LINE:
+    routeBtn.addEventListener("click", () => {
         formData.route = routeBtn.dataset.route;
         stepRoute.classList.add("hidden");
         stepTrip.classList.remove("hidden");
