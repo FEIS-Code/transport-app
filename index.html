@@ -51,11 +51,19 @@
         
         /* --- UPDATED STYLES --- */
         .btn-route.completed {
-            background-color: #34c759; /* Green for all */
+            background-color: #34c759; /* Green */
             color: white;
             border-color: #2a9e46;
         }
-        /* REMOVED .completed-partial */
+        
+        /* This new style makes the completed buttons look faded and disabled */
+        .btn-route.completed:disabled {
+            background-color: #a5d6a7; /* Lighter green */
+            color: #e8f5e9; /* Faded white text */
+            cursor: not-allowed;
+            opacity: 0.7; /* Make it look faded */
+        }
+        /* --- END OF UPDATED STYLES --- */
         
         .hidden {
             display: none;
@@ -107,15 +115,16 @@
         
         <div id="status-message"></div>
     </div>
+
 <script>
     // -------------------------------------------------------------------------
-    // --- IMPORTANT: Paste your NEW Web App URL here                       ---
+    // --- IMPORTANT: Make sure this is your latest deployed URL             ---
     // -------------------------------------------------------------------------
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbza-ioENKJNvBbYyvMhaClhQUV-feBi4J97mZWf0o8oMbnJHpGBCkus31QOcE5H9OQW2Q/exec"; // <-- PASTE NEW URL
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbza-ioENKJNvBbYyvMhaClhQUV-feBi4J97mZWf0o8oMbnJHpGBCkus31QOcE5H9OQW2Q/exec"; // <-- Make sure this is your latest URL
     
     // Global state
     const formData = { date: "", route: "", trip: "" };
-    let submittedTrips = new Set(); // Stores fetched data, e.g., "R1"
+    let submittedTrips = new Set(); 
 
     // Get elements
     const form = document.getElementById("transport-form");
@@ -126,37 +135,31 @@
     const routeGrid = document.querySelector("#step-route .grid-container");
     const stepDetails = document.getElementById("step-details");
     const dateInput = document.getElementById("date");
-    const tripSelect = document.getElementById("trip-select"); // <-- NEW: Get trip dropdown
+    const tripSelect = document.getElementById("trip-select");
     const nextRouteButton = document.getElementById("btn-next-route");
 
     // --- Step 1: Date & Trip ---
     dateInput.valueAsDate = new Date();
-    nextRouteButton.disabled = false; // Enable button by default
+    nextRouteButton.disabled = false; 
 
-    // Check both date and trip to enable button
     function checkStep1Validity() {
         nextRouteButton.disabled = !dateInput.value || !tripSelect.value;
     }
     dateInput.addEventListener("input", checkStep1Validity);
     tripSelect.addEventListener("input", checkStep1Validity);
-    checkStep1Validity(); // Run on load
+    checkStep1Validity(); 
 
     // Step 1 → Step 2 (Route)
     nextRouteButton.addEventListener("click", async () => {
-        // Get values from Step 1
         formData.date = dateInput.value;
         formData.trip = tripSelect.value; 
-
-        // Validation is already handled by the button's disabled state
         
         stepDate.classList.add("hidden");
         stepRoute.classList.remove("hidden");
         subHeader.textContent = "Step 2: Loading routes...";
 
-        // Fetch the data for the selected date AND trip
         await fetchSubmittedRoutes(formData.date, formData.trip);
         
-        // After data is fetched, build the route buttons
         buildRouteButtons();
         subHeader.textContent = `Step 2: Select Route (${formData.trip})`;
     });
@@ -164,16 +167,13 @@
     /**
      * Fetches submitted routes for the given date AND trip.
      */
-    async function fetchSubmittedRoutes(date, trip) { // <-- UPDATED
+    async function fetchSubmittedRoutes(date, trip) { 
         submittedTrips.clear(); 
         
         try {
             const url = new URL(WEB_APP_URL);
             url.searchParams.append('date', date);
-            url.searchParams.append('trip', trip); // <-- NEW: Send trip
-            
-            // This adds a unique number to the URL to trick the 
-            // browser into fetching fresh data every time.
+            url.searchParams.append('trip', trip); 
             url.searchParams.append('cache_bust', new Date().getTime());
             
             const response = await fetch(url);
@@ -181,7 +181,7 @@
                 throw new Error("Network error while fetching routes.");
             }
             
-            const data = await response.json(); // e.g., ["R1", "R5"]
+            const data = await response.json(); 
             
             if (data.status === 'error') {
                 throw new Error(data.message);
@@ -208,18 +208,23 @@
             routeBtn.className = "btn-route";
             routeBtn.dataset.route = routeName;
             
-            // --- UPDATED COMPLETION LOGIC ---
-            // Simpler: just check if the route is in the set
             const isDone = submittedTrips.has(routeName);
 
             routeBtn.textContent = routeName;
             if (isDone) {
-                routeBtn.classList.add("completed"); // Only one class
+                routeBtn.classList.add("completed"); 
             }
+
+            // --- UPDATED LOGIC ---
+            // Disable the button if it's already done
+            routeBtn.disabled = isDone;
             // --- END OF UPDATED LOGIC ---
 
             // Add click listener
             routeBtn.addEventListener("click", () => {
+                
+                // No alert needed, as a disabled button can't be clicked
+
                 formData.route = routeBtn.dataset.route;
                 stepRoute.classList.add("hidden");
                 stepDetails.classList.remove("hidden");
@@ -227,7 +232,6 @@
                 const [year, month, day] = formData.date.split('-');
                 const friendlyDate = `${day}/${month}/${year}`;
                 
-                // --- UPDATED: Header now includes trip ---
                 subHeader.textContent = `Step 3: Details (${formData.route} - ${formData.trip} - ${friendlyDate})`;
             });
 
@@ -242,15 +246,12 @@
         submitButton.disabled = true;
         submitButton.textContent = "Submitting...";
 
-        // --- UPDATED: finalData no longer needs to find trip ---
         const finalData = {
-            ...formData, // This now contains date, trip, AND route
+            ...formData, 
             studentCount: document.getElementById("student-count").value,
             time: document.getElementById("time").value,
             concerns: document.getElementById("concerns").value
         };
-
-        // --- REMOVED: Trip validation (now done in Step 1) ---
 
         try {
             await fetch(WEB_APP_URL, {
@@ -278,13 +279,13 @@
     }
 
     function resetForm() {
-        form.reset(); // This will reset date AND the trip dropdown
+        form.reset(); 
         dateInput.valueAsDate = new Date();
-        checkStep1Validity(); // Re-check button status
+        checkStep1Validity(); 
         
         formData.route = "";
         formData.trip = "";
-        formData.date = ""; // Clear date from formData
+        formData.date = ""; 
 
         stepDetails.classList.add("hidden");
         stepRoute.classList.add("hidden");
@@ -297,5 +298,6 @@
         showStatus("Form reset for next entry.", "");
     }
 </script>
+
 </body>
 </html>
